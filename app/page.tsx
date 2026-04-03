@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { STEPS } from "@/lib/constants";
-import { useProgress } from "@/lib/use-progress";
+import { useProgress } from "@/hooks/useProgress";
 import { cn } from "@/lib/utils";
 import { StepProgressBar } from "@/components/layout/step-progress";
 import {
@@ -43,10 +43,10 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 export default function HomePage() {
-  const { getOverallCompletion, isStepCompleted, getStepCompletion, isLoaded } =
+  const { overallCompletion, isStepCompleted, stepCompletion, isLoaded } =
     useProgress();
 
-  const completion = isLoaded ? getOverallCompletion() : 0;
+  const completion = isLoaded ? overallCompletion : 0;
 
   return (
     <div className="space-y-8">
@@ -106,7 +106,7 @@ export default function HomePage() {
           {STEPS.map((step) => {
             const Icon = ICON_MAP[step.icon] || Database;
             const completed = isLoaded && isStepCompleted(step.id);
-            const stepCompletion = isLoaded ? getStepCompletion(step.id) : 0;
+            const completion_step = isLoaded ? stepCompletion(step.id) : 0;
 
             return (
               <Link key={step.id} href={`/step/${step.id}`}>
@@ -149,7 +149,7 @@ export default function HomePage() {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <Progress
-                        value={stepCompletion}
+                        value={completion_step}
                         className="flex-1 h-1.5 mr-3"
                       />
                       <ArrowRight className="h-4 w-4 text-gray-400 shrink-0" />
@@ -325,6 +325,29 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* New Features */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">더 알아보기</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/builder", title: "퀴즈 빌더", desc: "CSV 단어장으로 AI 퀴즈 자동 생성", color: "bg-indigo-600", emoji: "🛠️" },
+            { href: "/demo", title: "빠른 데모", desc: "6단계 워크플로우를 바로 체험", color: "bg-orange-500", emoji: "⚡" },
+            { href: "/learn", title: "바이브 코딩", desc: "AI로 앱 만드는 방법 배우기", color: "bg-violet-600", emoji: "🎓" },
+            { href: "/guide", title: "앱 가이드", desc: "플랫폼 목적과 사용 안내", color: "bg-teal-600", emoji: "📖" },
+          ].map((item) => (
+            <Link key={item.href} href={item.href}>
+              <div className="rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer h-full">
+                <div className={cn("inline-flex items-center justify-center h-10 w-10 rounded-xl text-white text-lg mb-3", item.color)}>
+                  {item.emoji}
+                </div>
+                <h3 className="font-semibold text-sm mb-1">{item.title}</h3>
+                <p className="text-xs text-gray-500">{item.desc}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 

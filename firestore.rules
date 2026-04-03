@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own data
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Progress - users own their progress
+    match /progress/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Vocabulary - students read, teachers write
+    match /vocabulary/{wordId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.token.role == 'teacher';
+      allow update: if request.auth != null && request.auth.token.role == 'teacher';
+      allow delete: if request.auth != null && request.auth.token.role == 'teacher';
+    }
+
+    // Quiz results - users own their results
+    match /quizResults/{resultId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Learning history - users own their history
+    match /learningHistory/{entryId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Public vocabulary metadata - anyone can read
+    match /vocabularyMetadata/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admin collections - only admin can write
+    match /admin/{collection}/{docId} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

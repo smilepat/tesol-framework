@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { STEPS } from "@/lib/constants";
-import { useProgress } from "@/lib/use-progress";
+import { useProgress } from "@/hooks/useProgress";
 import { cn } from "@/lib/utils";
 import {
   Database,
@@ -29,12 +29,12 @@ export function StepSidebar() {
   const pathname = usePathname();
   const {
     isStepCompleted,
-    getStepCompletion,
-    getOverallCompletion,
+    stepCompletion,
+    overallCompletion,
     isLoaded,
   } = useProgress();
 
-  const completion = isLoaded ? getOverallCompletion() : 0;
+  const completion = isLoaded ? overallCompletion : 0;
 
   return (
     <aside className="hidden lg:block w-72 shrink-0">
@@ -59,8 +59,8 @@ export function StepSidebar() {
               const Icon = ICON_MAP[step.icon] || Database;
               const isActive = pathname === `/step/${step.id}`;
               const completed = isLoaded && isStepCompleted(step.id);
-              const stepCompletion = isLoaded
-                ? getStepCompletion(step.id)
+              const completion_step = isLoaded
+                ? stepCompletion(step.id)
                 : 0;
 
               return (
@@ -88,8 +88,8 @@ export function StepSidebar() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-medium">{step.titleKo}</p>
-                    {stepCompletion > 0 && !completed && (
-                      <Progress value={stepCompletion} className="h-1 mt-1" />
+                    {completion_step > 0 && !completed && (
+                      <Progress value={completion_step} className="h-1 mt-1" />
                     )}
                   </div>
                   {isActive && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { STEPS } from "@/lib/constants";
-import { useProgress } from "@/lib/use-progress";
+import { useProgress } from "@/hooks/useProgress";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 

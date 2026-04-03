@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { STEPS } from "@/lib/constants";
-import { useProgress } from "@/lib/use-progress";
+import { useProgress } from "@/hooks/useProgress";
 import { cn } from "@/lib/utils";
 import {
   Database,
@@ -17,6 +17,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Database,
@@ -28,10 +30,11 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export function MainNav() {
   const pathname = usePathname();
-  const { getOverallCompletion, isStepCompleted, resetProgress, isLoaded } =
+  const { isStepCompleted, resetProgress, isLoaded, overallCompletion } =
     useProgress();
+  const { isAuthenticated } = useAuth();
 
-  const completion = isLoaded ? getOverallCompletion() : 0;
+  const completion = isLoaded ? overallCompletion : 0;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -46,7 +49,7 @@ export function MainNav() {
           </Link>
 
           {/* Step Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1 flex-1 max-w-3xl mx-4">
             {STEPS.map((step) => {
               const Icon = ICON_MAP[step.icon] || Database;
               const isActive =
@@ -83,23 +86,39 @@ export function MainNav() {
             })}
           </nav>
 
-          {/* Progress + Reset */}
+          {/* Progress + Reset + Auth */}
           <div className="flex items-center gap-3">
+            {/* Progress */}
             <div className="hidden sm:flex items-center gap-2">
               <Progress value={completion} className="w-24 h-2" />
               <span className="text-xs text-gray-500 font-medium">
                 {completion}%
               </span>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={resetProgress}
-              className="text-gray-400 hover:text-gray-600"
-              title="진행 상태 초기화"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
+
+            {/* Reset Button */}
+            {isAuthenticated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetProgress}
+                className="text-gray-400 hover:text-gray-600"
+                title="진행 상태 초기화"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Auth */}
+            <div className="flex items-center gap-2">
+              {isAuthenticated ? (
+                <UserMenu />
+              ) : (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/login">Sign In</Link>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

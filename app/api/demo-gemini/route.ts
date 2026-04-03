@@ -1,3 +1,4 @@
+import { GeminiService } from "@/lib/services/gemini.service";
 import { simulateGeminiCall, getSimulatedMetadata } from "@/lib/mock-gemini";
 
 export async function POST(request: Request) {
@@ -11,6 +12,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Try real Gemini API first
+    if (GeminiService.isConfigured()) {
+      try {
+        const result = await GeminiService.generateResponse(prompt, temperature);
+        return Response.json({ success: true, ...result });
+      } catch (err) {
+        console.error("Gemini API failed, falling back to mock:", err);
+      }
+    }
+
+    // Mock fallback
     const response = await simulateGeminiCall(prompt, { temperature });
     const metadata = getSimulatedMetadata();
 

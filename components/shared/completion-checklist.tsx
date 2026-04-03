@@ -1,6 +1,6 @@
 "use client";
 
-import { useProgress } from "@/lib/use-progress";
+import { useProgress } from "@/hooks/useProgress";
 import { StepId, TaskItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +23,10 @@ export function CompletionChecklist({
   tasks,
   color,
 }: CompletionChecklistProps) {
-  const { toggleTask, isTaskCompleted, getStepCompletion, isStepCompleted, isLoaded } =
+  const { toggleTask, isTaskCompleted, stepCompletion, isStepCompleted, isLoaded } =
     useProgress();
 
-  const completion = isLoaded ? getStepCompletion(stepId) : 0;
+  const completion = isLoaded ? stepCompletion(stepId) : 0;
   const completed = isLoaded && isStepCompleted(stepId);
 
   return (
