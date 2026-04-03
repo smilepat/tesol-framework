@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { CsvService } from "@/lib/services/csv.service";
 import { QuizService } from "@/lib/services/quiz.service";
+import { QuizStoreService } from "@/lib/services/quiz-store.service";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   CsvRow,
   QuizSettings,
+  QuizItem,
   GeneratedQuiz,
   BuilderStep,
   PURPOSE_LABELS,
@@ -34,6 +38,12 @@ import {
   AlertCircle,
   Copy,
   Check,
+  Trash2,
+  Edit3,
+  ChevronUp,
+  ChevronDown,
+  Download,
+  Save,
 } from "lucide-react";
 
 const STEP_CONFIG = [
@@ -61,6 +71,11 @@ export default function BuilderPage() {
   const [quiz, setQuiz] = useState<GeneratedQuiz | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ question: "", correctAnswer: "", explanation: "" });
+  const [saved, setSaved] = useState(false);
+  const { user } = useAuth();
+  const userId = user?.uid || "anonymous";
 
   // CSV Upload handlers
   const handleFile = useCallback(async (file: File) => {
@@ -146,10 +161,52 @@ ${csvData.length > 3 ? `... 외 ${csvData.length - 3}개` : ""}`;
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Quiz editing helpers
+  const deleteQuizItem = (id: string) => {
+    if (!quiz) return;
+    setQuiz({ ...quiz, items: quiz.items.filter(item => item.id !== id) });
+  };
+
+  const moveQuizItem = (index: number, direction: "up" | "down") => {
+    if (!quiz) return;
+    const items = [...quiz.items];
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    [items[index], items[targetIndex]] = [items[targetIndex], items[index]];
+    setQuiz({ ...quiz, items });
+  };
+
+  const startEdit = (item: QuizItem) => {
+    setEditingId(item.id);
+    setEditForm({ question: item.question, correctAnswer: item.correctAnswer, explanation: item.explanation });
+  };
+
+  const saveEdit = () => {
+    if (!quiz || !editingId) return;
+    setQuiz({
+      ...quiz,
+      items: quiz.items.map(item =>
+        item.id === editingId
+          ? { ...item, question: editForm.question, correctAnswer: editForm.correctAnswer, explanation: editForm.explanation }
+          : item
+      ),
+    });
+    setEditingId(null);
+  };
+
   const progress = ((step - 1) / 5) * 100;
 
   return (
     <div className="space-y-6">
+      {/* Page Nav */}
+      <div className="flex items-center gap-3 text-sm">
+        <Link href="/" className="text-gray-500 hover:text-gray-800 transition-colors">← 홈으로</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/learn" className="text-violet-600 hover:text-violet-800 transition-colors">🎓 바이브 코딩 배우기</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/demo" className="text-orange-600 hover:text-orange-800 transition-colors">⚡ 빠른 데모</Link>
+      </div>
+
       {/* Header */}
       <div className="rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-500 p-8 text-white">
         <Badge className="bg-white/20 text-white border-0 mb-4">Quiz Builder</Badge>
@@ -449,6 +506,19 @@ ${csvData.length > 3 ? `... 외 ${csvData.length - 3}개` : ""}`;
                   <ArrowRight className="h-4 w-4 mr-1 rotate-90" />
                   JSON 다운로드
                 </Button>
+                <Button
+                  variant={saved ? "secondary" : "default"}
+                  size="sm"
+                  onClick={async () => {
+                    if (!quiz) return;
+                    await QuizStoreService.save(userId, quiz);
+                    setSaved(true);
+                    setTimeout(() => setSaved(false), 3000);
+                  }}
+                >
+                  {saved ? <Check className="h-4 w-4 mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                  {saved ? "저장됨" : "퀴즈 저장"}
+                </Button>
               </div>
               {quiz.items.map((item, i) => (
                 <Card key={item.id} className="border">
@@ -457,35 +527,67 @@ ${csvData.length > 3 ? `... 외 ${csvData.length - 3}개` : ""}`;
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-xs">Q{i + 1}</Badge>
                         <Badge variant="outline" className="text-xs">{QUESTION_TYPE_LABELS[item.type]}</Badge>
+                        <Badge className="text-xs bg-gray-100 text-gray-600">{item.word}</Badge>
                       </div>
-                      <Badge className="text-xs bg-gray-100 text-gray-600">{item.word}</Badge>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => moveQuizItem(i, "up")} disabled={i === 0} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30" title="위로">
+                          <ChevronUp className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => moveQuizItem(i, "down")} disabled={i === quiz.items.length - 1} className="p-1 rounded hover:bg-gray-100 disabled:opacity-30" title="아래로">
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => startEdit(item)} className="p-1 rounded hover:bg-blue-50 text-blue-600" title="수정">
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => deleteQuizItem(item.id)} className="p-1 rounded hover:bg-red-50 text-red-500" title="삭제">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm font-medium whitespace-pre-wrap">{item.question}</p>
-                    {item.options && (
-                      <div className="space-y-1.5">
-                        {item.options.map((opt, j) => (
-                          <div
-                            key={j}
-                            className={cn(
-                              "px-3 py-2 rounded-lg text-sm border",
-                              opt === item.correctAnswer ? "bg-green-50 border-green-300 text-green-800 font-medium" : ""
-                            )}
-                          >
-                            {String.fromCharCode(65 + j)}. {opt}
-                            {opt === item.correctAnswer && " ✓"}
+
+                    {editingId === item.id ? (
+                      <div className="space-y-2 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <label className="text-xs font-medium text-blue-700">문제</label>
+                        <Textarea value={editForm.question} onChange={e => setEditForm(f => ({ ...f, question: e.target.value }))} rows={2} className="text-sm" />
+                        <label className="text-xs font-medium text-blue-700">정답</label>
+                        <Input value={editForm.correctAnswer} onChange={e => setEditForm(f => ({ ...f, correctAnswer: e.target.value }))} className="text-sm" />
+                        <label className="text-xs font-medium text-blue-700">해설</label>
+                        <Textarea value={editForm.explanation} onChange={e => setEditForm(f => ({ ...f, explanation: e.target.value }))} rows={2} className="text-sm" />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={saveEdit}><Save className="h-3 w-3 mr-1" />저장</Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>취소</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium whitespace-pre-wrap">{item.question}</p>
+                        {item.options && (
+                          <div className="space-y-1.5">
+                            {item.options.map((opt, j) => (
+                              <div
+                                key={j}
+                                className={cn(
+                                  "px-3 py-2 rounded-lg text-sm border",
+                                  opt === item.correctAnswer ? "bg-green-50 border-green-300 text-green-800 font-medium" : ""
+                                )}
+                              >
+                                {String.fromCharCode(65 + j)}. {opt}
+                                {opt === item.correctAnswer && " ✓"}
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        )}
+                        {!item.options && (
+                          <div className="px-3 py-2 rounded-lg bg-green-50 border border-green-300 text-sm text-green-800">
+                            정답: {item.correctAnswer}
+                          </div>
+                        )}
+                        <details className="text-xs text-gray-500">
+                          <summary className="cursor-pointer hover:text-gray-700">해설 보기</summary>
+                          <p className="mt-2 whitespace-pre-wrap">{item.explanation}</p>
+                        </details>
+                      </>
                     )}
-                    {!item.options && (
-                      <div className="px-3 py-2 rounded-lg bg-green-50 border border-green-300 text-sm text-green-800">
-                        정답: {item.correctAnswer}
-                      </div>
-                    )}
-                    <details className="text-xs text-gray-500">
-                      <summary className="cursor-pointer hover:text-gray-700">해설 보기</summary>
-                      <p className="mt-2 whitespace-pre-wrap">{item.explanation}</p>
-                    </details>
                   </CardContent>
                 </Card>
               ))}

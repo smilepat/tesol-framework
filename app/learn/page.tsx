@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { LEARN_STEPS } from "@/lib/constants/learn-steps";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +121,15 @@ function LearnStepCard({ step, index }: { step: typeof LEARN_STEPS[0]; index: nu
 export default function LearnPage() {
   return (
     <div className="space-y-8">
+      {/* Page Nav */}
+      <div className="flex items-center gap-3 text-sm">
+        <Link href="/" className="text-gray-500 hover:text-gray-800 transition-colors">← 홈으로</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/builder" className="text-indigo-600 hover:text-indigo-800 transition-colors">🛠️ 퀴즈 빌더</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/demo" className="text-orange-600 hover:text-orange-800 transition-colors">⚡ 빠른 데모</Link>
+      </div>
+
       {/* Hero */}
       <div className="rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 p-8 text-white">
         <Badge className="bg-white/20 text-white border-0 mb-4">

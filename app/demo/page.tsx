@@ -72,6 +72,15 @@ export default function DemoPage() {
 
   return (
     <div className="space-y-6">
+      {/* Page Nav */}
+      <div className="flex items-center gap-3 text-sm">
+        <Link href="/" className="text-gray-500 hover:text-gray-800 transition-colors">← 홈으로</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/builder" className="text-indigo-600 hover:text-indigo-800 transition-colors">🛠️ 직접 만들기</Link>
+        <span className="text-gray-300">|</span>
+        <Link href="/learn" className="text-violet-600 hover:text-violet-800 transition-colors">🎓 바이브 코딩 배우기</Link>
+      </div>
+
       {/* Header */}
       <div className="rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 p-8 text-white">
         <Badge className="bg-white/20 text-white border-0 mb-4">Quick Demo</Badge>
