@@ -31,6 +31,12 @@ export default function TeacherDashboard() {
         <Badge variant="default">Teacher Role</Badge>
       </div>
 
+      {/* Demo Data Banner */}
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <p className="font-medium">현재 데모 데이터로 표시됩니다.</p>
+        <p className="text-xs text-amber-600 mt-1">향후 Firebase 연동 시 실제 데이터가 반영됩니다.</p>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Vocabulary Management */}
         <Card className="hover:shadow-lg transition-shadow">
@@ -179,27 +185,20 @@ export default function TeacherDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">New vocabulary words added</p>
-                <p className="text-xs text-gray-500">2 hours ago</p>
+            {[
+              { color: "bg-green-500", text: "중2-3반 Unit 3 퀴즈 생성 완료", time: "오늘 09:15" },
+              { color: "bg-blue-500", text: "어휘 데이터 48개 업로드", time: "어제 14:30" },
+              { color: "bg-purple-500", text: "고1-2반 중간고사 문항 생성", time: "어제 10:00" },
+              { color: "bg-orange-500", text: "신규 단어장 CSV 등록 (환경 주제)", time: "04/01" },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center space-x-3">
+                <div className={`w-2 h-2 ${item.color} rounded-full`}></div>
+                <div className="flex-1">
+                  <p className="text-sm">{item.text}</p>
+                  <p className="text-xs text-gray-500">{item.time}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">Google Sheets synced successfully</p>
-                <p className="text-xs text-gray-500">5 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <div className="flex-1">
-                <p className="text-sm">New student registered</p>
-                <p className="text-xs text-gray-500">1 day ago</p>
-              </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>

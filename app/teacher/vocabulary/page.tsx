@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CsvService } from "@/lib/services/csv.service";
+import { VocabularyStoreService } from "@/lib/services/vocabulary-store.service";
 import { CsvRow } from "@/lib/types/quiz.types";
 import {
   Upload,
@@ -18,15 +19,28 @@ import {
   AlertCircle,
   BookOpen,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function VocabularyPage() {
   const { user } = useAuth();
-  const [words, setWords] = useState<CsvRow[]>(CsvService.getSampleData());
+  const [words, setWords] = useState<CsvRow[]>([]);
   const [search, setSearch] = useState("");
   const [csvError, setCsvError] = useState<string | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const userId = user?.uid || 'anonymous';
+
+  // Load vocabulary on mount
+  useEffect(() => {
+    (async () => {
+      const saved = await VocabularyStoreService.load(userId);
+      setWords(saved.length > 0 ? saved : CsvService.getSampleData());
+      setLoading(false);
+    })();
+  }, [userId]);
 
   const handleFile = useCallback(async (file: File) => {
     try {
@@ -34,19 +48,21 @@ export default function VocabularyPage() {
       CsvService.validateFile(file);
       const text = await CsvService.readFile(file);
       const rows = CsvService.parse(text);
-      setWords(prev => [...prev, ...rows]);
+      const combined = await VocabularyStoreService.addWords(userId, rows);
+      setWords(combined);
     } catch (err) {
       setCsvError(err instanceof Error ? err.message : "파일 처리 오류");
     }
-  }, []);
+  }, [userId]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
   }, [handleFile]);
 
-  const deleteWord = (index: number) => {
-    setWords(prev => prev.filter((_, i) => i !== index));
+  const deleteWord = async (index: number) => {
+    const updated = await VocabularyStoreService.deleteWord(userId, words, index);
+    setWords(updated);
   };
 
   const filtered = words.filter(w =>
@@ -66,6 +82,14 @@ export default function VocabularyPage() {
       <div className="text-center py-16">
         <p className="text-gray-600">로그인이 필요합니다.</p>
         <Link href="/login"><Button className="mt-4">로그인</Button></Link>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     );
   }

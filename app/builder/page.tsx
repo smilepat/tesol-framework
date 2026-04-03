@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { CsvService } from "@/lib/services/csv.service";
@@ -91,15 +92,33 @@ export default function BuilderPage() {
     setCsvError(null);
   };
 
-  // Quiz generation
+  // Quiz generation - calls /api/quiz-generate (real Gemini → mock fallback)
   const generateQuiz = async () => {
     setGenerating(true);
     try {
+      const res = await fetch("/api/quiz-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ words: csvData, settings }),
+      });
+      const data = await res.json();
+      if (data.success && data.items) {
+        setQuiz({
+          id: "quiz-" + Date.now(),
+          settings,
+          items: data.items,
+          createdAt: new Date(),
+        });
+        setStep(6);
+      } else {
+        throw new Error(data.error || "퀴즈 생성 실패");
+      }
+    } catch (err) {
+      console.error("Quiz generation failed:", err);
+      // Fallback to local mock
       const result = await QuizService.generateQuiz(csvData, settings);
       setQuiz(result);
       setStep(6);
-    } catch (err) {
-      console.error("Quiz generation failed:", err);
     } finally {
       setGenerating(false);
     }
@@ -114,7 +133,7 @@ export default function BuilderPage() {
 - CEFR 레벨: ${settings.cefrLevel}
 - 문제 유형: ${settings.questionTypes.map(t => QUESTION_TYPE_LABELS[t]).join(", ")}
 - 문제 수: ${settings.questionCount}개
-- 단어 수: ${csvData.length}개
+- 단어 수: ${csvData.length}개${settings.learningObjective ? `\n- 학습 목표: ${settings.learningObjective}` : ""}
 
 [단어 데이터]
 ${csvData.slice(0, 3).map(w => `${w.word} - ${w.meaningKo || w.meaning}`).join("\n")}
@@ -229,6 +248,16 @@ ${csvData.length > 3 ? `... 외 ${csvData.length - 3}개` : ""}`;
                   value={settings.topic}
                   onChange={(e) => setSettings(s => ({ ...s, topic: e.target.value }))}
                   placeholder="예: Unit 3 - Environment"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">학습 목표 (선택)</label>
+                <Textarea
+                  value={settings.learningObjective || ""}
+                  onChange={(e) => setSettings(s => ({ ...s, learningObjective: e.target.value }))}
+                  placeholder="구체적으로 적으면 AI가 더 적절한 문항을 생성합니다. 예: 환경 관련 학술 어휘의 정확한 의미와 용법을 파악한다."
+                  rows={3}
+                  className="text-sm"
                 />
               </div>
             </div>
@@ -403,6 +432,22 @@ ${csvData.length > 3 ? `... 외 ${csvData.length - 3}개` : ""}`;
                 >
                   {copiedId === "all" ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
                   전체 복사
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const blob = new Blob([JSON.stringify(quiz, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `quiz-${new Date().toISOString().slice(0, 10)}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <ArrowRight className="h-4 w-4 mr-1 rotate-90" />
+                  JSON 다운로드
                 </Button>
               </div>
               {quiz.items.map((item, i) => (

@@ -1,5 +1,5 @@
 export interface QuizSettings {
-  purpose: "review" | "midterm" | "homework" | "diagnostic" | "custom";
+  purpose: "review" | "midterm" | "homework" | "diagnostic" | "performance" | "custom";
   gradeLevel: string;
   topic: string;
   cefrLevel: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
@@ -43,6 +43,7 @@ export const PURPOSE_LABELS: Record<QuizSettings["purpose"], string> = {
   midterm: "중간/기말 시험",
   homework: "숙제",
   diagnostic: "진단 평가",
+  performance: "수행평가",
   custom: "직접 입력",
 };
 
